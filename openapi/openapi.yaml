@@ -1,0 +1,360 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Mostafa financial API
+  description: a simpe financial and inventory managmenet for mostafa
+
+servers:
+  - url: localhost/api/v1
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    error:
+      type: object
+      properties:
+        err:
+          type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        role:
+          type: string
+    Item:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        image:
+          type: string
+        creationDate:
+          type: string
+        author:
+          $ref: "#/components/schemas/User"
+        description:
+          type: string
+        brand:
+          type: string
+    Sell:
+      type: object
+      properties:
+        item:
+          $ref: '#/components/schemas/Item'
+        butItem:
+          $ref: '#/components/schemas/Buy'
+        Quantity:
+          type: integer
+        UnitPrice:
+          type: number
+        EtRRate:
+          type: number
+        Date:
+          type: string
+        ShippingPrice:
+          type: number 
+        TotalRials:
+          type: number
+        TotalEuros:
+          type: number
+        profitRial:
+          type: number
+        profitEuro:
+          type: number
+    Buy:
+      type: object
+      properties:
+        item:
+          $ref: '#/components/schemas/Item'
+        Quantity:
+          type: integer
+        UnitPrice:
+          type: number
+        EtRRate:
+          type: number
+        Date:
+          type: string
+        ShippingPrice:
+          type: number
+        TotalRials:
+          type: number
+        TotalEuros:
+          type: number
+
+#----------------------------------------------------------------------------
+paths: 
+  /users:
+    get:
+      description: return a list of registered users with username and role
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  username:
+                    type: string
+                  roel:
+                    type: string
+        '403':
+          description: User is not authorized to access data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+  /users/signup:
+    post:
+      description: signup new users
+      parameters:
+        - name: email
+          in: query
+          description: user provided email
+          required: true
+          schema:
+            type: string
+            format: email
+        - name: password
+          in: query
+          description: user provided password
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: user created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  username:
+                    type: string
+                  email:
+                    type: string
+        '403':
+          description: user already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        '422':
+          description: email or password are not available or are not in needed format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+  /users/signin:
+    post:
+      description: signin user
+      parameters:
+        - name: email
+          in: query
+          description: user provided email
+          required: true
+          schema:
+            type: string
+            format: email
+        - name: password
+          in: query
+          description: user provided password
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: user logedin successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  username:
+                    type: string
+                  email:
+                    type: string
+        '404':
+          description: user was not found!
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        '403':
+          description: username or password is wrong!
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+  /users/current:
+    get:
+      security: 
+        - BearerAuth: [user]
+      description: get current user data
+      responses:
+        '200':
+          description: user is loggedin
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  username:
+                    type: string
+                  email:
+                    type: string
+        '403':
+          description: user is not loggedin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+  /users/refresh-token:
+    post:
+      security:
+        - BearerAuth: [user]
+      description: refresh expired token
+      responses:
+        '201':
+          description: new token granted successcfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        '403':
+          description: token is not valid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+  /users/profile:
+    get:
+      security:
+        - BearerAuth: [user]
+      description: get user profile data
+      responses:
+        '200':
+          description: user is authenticated and data is provided
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  username:
+                    type: string
+                  email:
+                    type: string
+                  imageUrl:
+                    type: string
+                  createdItems:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+        '403':
+          description: user is not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+  /inventory:
+    get:
+      security:
+        - BearerAuth: [user]
+      description: get all inventory items
+      responses:
+        '200':
+          description: user is authorized to access data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                    image:
+                      type: string
+                    quantity:
+                      type: number
+        '403':
+          description: user is not authorized to access data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+  /inventory/{itemId}:
+    get:
+      security:
+        - BearerAuth: [user]
+      description: get details about item
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: string
+          description: ID of the inventory item
+      responses:
+        '200':
+          description: user is authorized to access item data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  item:
+                    $ref: '#/components/schemas/Item'
+                  quantitiy:
+                    type: number
+                  buys:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Buy"
+                  sells:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Sell"
+        '403':
+          description: user is not authorized to acces this item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        '404':
+          description: Item was not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+
+
+
